@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trabajo Conexión Remota</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        section {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .image-placeholder {
+            width: 100%;
+            height: 200px;
+            background: #e9ecef;
+            border: 1px dashed #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #6c757d;
+            font-style: italic;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Trabajo Práctico: Conexión Remota y Administración</h1>
+    <h2>Harkaitz Herrero Carnicero</h2>
+
+    <section id="ejercicio1">
+        <h2>EJERCICIO 1: Creación usuario Ubuntu y conexiones SSH</h2>
+        <p>En este ejercicio creamos un usuario en Ubuntu, instalamos el servidor ssh para conectarnos con otros equipos Linux, nos conectamos con Putty desde Windows a un equipo Linux, y finalmente lo configuramos para acceder sin tener que poner la contraseña.</p>
+        <ul>
+            <li>Crear usuario <img src="creacionusuario1.png" alt="usuario">
+            <li>conexión servidor SSH <img src="conexionssh2.png" alt=""></li>
+            <li>Conexión con Putty <img src="conexionputty3.png" alt=""></li>
+            <li>Conexión sin contraseña con keygen<img src="sshkeygen4.png" alt=""> <img src="conexionsincontraseña5.png" alt=""></li>
+    </section>
+
+    <section id="ejercicio2">
+        <h2>EJERCICIO 2: Conexión escritorio remoto con Remmina y Windows</h2>
+        <p>Levantamos el servicio de escritorio remoto en Windows, y establecemos una conexión con otro Windows de la misma red, y otra desde Linux usando el porgrama Remmina.</p>
+        <ul>
+            <li>Escritorio Remoto en Windows <img src="remotowin8.png" alt=""></li>
+            <li>Conectar desde Linux usando Remmina (configuración de IP y conexión) <img src="remmina6.png" alt=""> <img src="conremmina7.png" alt=""></li>
+        </ul>
+    </section>
+
+    <section id="ejercicio3">
+        <h2>EJERCICIO 3: Administración remota con TeamViewer</h2>
+        <p>Instalamos y hacemos conexiones con Teamviewer en Ubuntu, Windows y un telefono movil.</p>
+        <ul>
+            <li>Conexión remota Windows-Windows <img src="twwindows9.png" alt=""></li>
+            <li>Conexión desde Windows a Ubuntu <img src="twwindowsubuntu10.png" alt=""></li>
+            <li>Conexión Ubuntu-Ubuntu <img src="twubuntu11.png" alt=""></li>
+            <li>Conexión desde movil a Windows <img src="twmovilwin.PNG" alt=""></li>
+            <li>Conexión desde movil a Ubuntu <img src="twmovilubuntu.PNG" alt=""></li>
+        </ul>
+    </section>
+</body>
+</html>
