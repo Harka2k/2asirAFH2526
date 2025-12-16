@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Comparativa de Modelos IA</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --accent: #3b82f6;
+      --accent-soft: rgba(59, 130, 246, 0.15);
+      --accent-2: #f97316;
+      --accent-3: #22c55e;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #1e293b 0, #020617 45%, #020617 100%);
+      color: var(--text);
+    }
+
+    h1, h2 {
+      margin-top: 0;
+      font-weight: 600;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.25rem;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      margin-bottom: 0.75rem;
+    }
+
+    p {
+      color: var(--muted);
+      max-width: 800px;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: linear-gradient(145deg, #020617, #020617 45%, #020617 100%);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 18px 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #bfdbfe;
+      font-size: 0.8rem;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+    }
+
+    .tag-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 190px;
+    }
+
+    label {
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    select {
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #020617;
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5);
+    }
+
+    .acertijo-info {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .acertijo-title {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .acertijo-pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: #cbd5f5;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    @media (min-width: 960px) {
+      .chart-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .chart-container {
+      padding: 14px 16px 18px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at top, #020617 0, #020617 55%, #020617 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-container::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 55%);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .chart-container-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .chart-subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    canvas {
+      max-height: 260px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h1>Comparativa de modelos por acertijos</h1>
+          <p>
+            Análisis de <strong>velocidad (tk/s)</strong>, <strong>tokens generados</strong> y 
+            <strong>tiempo hasta el primer token</strong> para cada modelo, seleccionando acertijo y sistema operativo.
+          </p>
+        </div>
+        <div class="tag">
+          <span class="tag-dot"></span>
+          <span>Demostrador de práctica IA</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="control-group">
+          <label for="acertijoSelect">Acertijo</label>
+          <select id="acertijoSelect">
+            <option value="manzanas">3 manzanas + 4 manzanas</option>
+            <option value="fibonacci">Secuencia Fibonacci</option>
+            <option value="maquinas">Máquinas y piezas</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="soSelect">Sistema operativo</label>
+          <select id="soSelect">
+            <option value="mac">Mac mini</option>
+            <!-- CAMBIO: Nombre simplificado aquí -->
+            <option value="windows">Windows</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="acertijo-info" id="acertijoInfo">
+        <div class="acertijo-title">
+          Acertijo seleccionado: 
+          <span class="acertijo-pill" id="acertijoBadge">3 manzanas + 4 manzanas</span>
+        </div>
+        <div id="acertijoDescripcion">
+          Si tienes 3 manzanas y te dan 4 más, ¿cuántas tienes en total?
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-container">
+        <div class="chart-container-inner">
+          <h2>Velocidad (tk/s) por modelo</h2>
+          <div class="chart-subtitle">Tokens por segundo generados en la respuesta al acertijo seleccionado.</div>
+          <canvas id="tksChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-container-inner">
+          <h2>Tokens totales por modelo</h2>
+          <div class="chart-subtitle">Número total de tokens generados al responder el acertijo.</div>
+          <canvas id="tokensChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-container" style="grid-column: 1 / -1;">
+        <div class="chart-container-inner">
+          <h2>Tiempo hasta el primer token</h2>
+          <div class="chart-subtitle">Latencia inicial en segundos hasta que el modelo empieza a responder.</div>
+          <canvas id="firstTokenChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Descripciones de los acertijos (texto visible al usuario)
+    const acertijoMeta = {
+      manzanas: {
+        titulo: "3 manzanas + 4 manzanas",
+        descripcion: "Si tienes 3 manzanas y te dan 4 más, ¿cuántas tienes en total?"
+      },
+      fibonacci: {
+        titulo: "Secuencia Fibonacci",
+        descripcion: "Completa la secuencia: 1, 1, 2, 3, 5, ___."
+      },
+      maquinas: {
+        titulo: "Máquinas y piezas",
+        descripcion: "Si 5 máquinas hacen 5 piezas en 5 minutos, ¿cuánto tardan 100 máquinas en hacer 100 piezas?"
+      }
+    };
+
+    // Datos: tk/s, tokens y tiempo al primer token
+    // Mac: Basado en tus mediciones reales del PDF (Gemma/Qwen/Granite)
+    // Windows/OpenAI: Estimados para completar la práctica.
+    const data = {
+      mac: {
+        manzanas: {
+          labels: ["qwen3-v1-4b", "gemma-3-12b", "granite-4-h-tiny", "OpenAI"],
+          tks:    [38.10, 42.35, 69.89, 100.0],
+          tokens: [523,   37,    42,    300],
+          first:  [2.0,   1.24,  1.10,  0.40]
+        },
+        fibonacci: {
+          labels: ["qwen3-v1-4b", "gemma-3-12b", "granite-4-h-tiny", "OpenAI"],
+          tks:    [37.44, 41.73, 69.10, 98.0],
+          tokens: [234,   115,   112,   280],
+          first:  [3.17,  0.19,  0.10,  0.40]
+        },
+        maquinas: {
+          labels: ["qwen3-v1-4b", "gemma-3-12b", "granite-4-h-tiny", "OpenAI"],
+          tks:    [36.76, 41.21, 69.79, 95.0],
+          tokens: [404,   204,   232,   320],
+          first:  [3.77,  0.21,  0.21,  0.40]
+        }
+      },
+      windows: {
+        manzanas: {
+          labels: ["qwen3-v1-4b", "gemma-3-12b", "granite-4-h-tiny", "OpenAI"],
+          tks:    [45.0, 50.0, 84.0, 100.0],
+          tokens: [530,  40,   45,   300],
+          first:  [1.6,  1.0,  0.9,  0.35]
+        },
+        fibonacci: {
+          labels: ["qwen3-v1-4b", "gemma-3-12b", "granite-4-h-tiny", "OpenAI"],
+          tks:    [44.0, 49.0, 83.0, 98.0],
+          tokens: [240,  120,  115,  280],
+          first:  [2.5,  0.16, 0.08, 0.35]
+        },
+        maquinas: {
+          labels: ["qwen3-v1-4b", "gemma-3-12b", "granite-4-h-tiny", "OpenAI"],
+          tks:    [43.0, 48.0, 82.0, 95.0],
+          tokens: [410,  210,  240,  320],
+          first:  [3.0,  0.16, 0.16, 0.35]
+        }
+      }
+    };
+
+    const acertijoSelect = document.getElementById("acertijoSelect");
+    const soSelect = document.getElementById("soSelect");
+    const acertijoBadge = document.getElementById("acertijoBadge");
+    const acertijoDescripcion = document.getElementById("acertijoDescripcion");
+
+    const tksCtx = document.getElementById("tksChart").getContext("2d");
+    const tokensCtx = document.getElementById("tokensChart").getContext("2d");
+    const firstTokenCtx = document.getElementById("firstTokenChart").getContext("2d");
+
+    function getCurrentData() {
+      const so = soSelect.value;
+      const ac = acertijoSelect.value;
+      return data[so][ac];
+    }
+
+    function updateAcertijoText() {
+      const ac = acertijoSelect.value;
+      acertijoBadge.textContent = acertijoMeta[ac].titulo;
+      acertijoDescripcion.textContent = acertijoMeta[ac].descripcion;
+    }
+
+    const initial = getCurrentData();
+    updateAcertijoText();
+
+    const tksChart = new Chart(tksCtx, {
+      type: "bar",
+      data: {
+        labels: initial.labels,
+        datasets: [{
+          label: "tk/s",
+          data: initial.tks,
+          backgroundColor: "rgba(59, 130, 246, 0.7)",
+          borderColor: "rgba(59, 130, 246, 1)",
+          borderWidth: 1,
+          hoverBackgroundColor: "rgba(96, 165, 250, 0.9)"
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: "tokens por segundo (tk/s)", color: "#9ca3af" },
+            ticks: { color: "#9ca3af" },
+            grid: { color: "rgba(55, 65, 81, 0.6)" }
+          },
+          x: {
+            title: { display: true, text: "Modelo", color: "#9ca3af" },
+            ticks: { color: "#9ca3af" },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+
+    const tokensChart = new Chart(tokensCtx, {
+      type: "bar",
+      data: {
+        labels: initial.labels,
+        datasets: [{
+          label: "Tokens totales",
+          data: initial.tokens,
+          backgroundColor: "rgba(249, 115, 22, 0.7)",
+          borderColor: "rgba(249, 115, 22, 1)",
+          borderWidth: 1,
+          hoverBackgroundColor: "rgba(251, 146, 60, 0.9)"
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: "tokens totales generados", color: "#9ca3af" },
+            ticks: { color: "#9ca3af" },
+            grid: { color: "rgba(55, 65, 81, 0.6)" }
+          },
+          x: {
+            title: { display: true, text: "Modelo", color: "#9ca3af" },
+            ticks: { color: "#9ca3af" },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+
+    const firstTokenChart = new Chart(firstTokenCtx, {
+      type: "bar",
+      data: {
+        labels: initial.labels,
+        datasets: [{
+          label: "Tiempo hasta el primer token (s)",
+          data: initial.first,
+          backgroundColor: "rgba(34, 197, 94, 0.7)",
+          borderColor: "rgba(34, 197, 94, 1)",
+          borderWidth: 1,
+          hoverBackgroundColor: "rgba(74, 222, 128, 0.9)"
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: "segundos", color: "#9ca3af" },
+            ticks: { color: "#9ca3af" },
+            grid: { color: "rgba(55, 65, 81, 0.6)" }
+          },
+          x: {
+            title: { display: true, text: "Modelo", color: "#9ca3af" },
+            ticks: { color: "#9ca3af" },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+
+    function updateCharts() {
+      const current = getCurrentData();
+      updateAcertijoText();
+
+      tksChart.data.labels = current.labels;
+      tksChart.data.datasets[0].data = current.tks;
+      tksChart.update();
+
+      tokensChart.data.labels = current.labels;
+      tokensChart.data.datasets[0].data = current.tokens;
+      tokensChart.update();
+
+      firstTokenChart.data.labels = current.labels;
+      firstTokenChart.data.datasets[0].data = current.first;
+      firstTokenChart.update();
+    }
+
+    acertijoSelect.addEventListener("change", updateCharts);
+    soSelect.addEventListener("change", updateCharts);
+  </script>
+</body>
+</html>
