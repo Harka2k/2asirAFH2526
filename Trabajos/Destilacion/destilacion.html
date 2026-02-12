@@ -1,1 +1,615 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Guía práctica: Destilación de un modelo de sentimientos (Teacher → Student)</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --bg-alt: #020617;
+            --card: #020617;
+            --accent: #38bdf8;
+            --accent-soft: rgba(56,189,248,0.14);
+            --text: #e5e7eb;
+            --text-soft: #9ca3af;
+            --border: #1f2933;
+            --danger: #f97373;
+            --muted: #4b5563;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #111827 0, #020617 50%, #000 100%);
+            color: var(--text);
+        }
+        .layout {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 20px 40px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        header h1 {
+            font-size: 2.2rem;
+            margin: 0 0 8px;
+            letter-spacing: 0.02em;
+        }
+        header p {
+            margin: 0;
+            color: var(--text-soft);
+            font-size: 0.98rem;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: rgba(15, 23, 42, 0.85);
+            color: var(--text-soft);
+            font-size: 0.78rem;
+            margin-bottom: 10px;
+        }
+        .badge span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #22c55e;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
+        }
+
+        h2 {
+            margin: 30px 0 10px;
+            font-size: 1.35rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+            padding-bottom: 6px;
+        }
+        h3 {
+            margin: 18px 0 8px;
+            font-size: 1.05rem;
+            color: var(--accent);
+        }
+        p {
+            margin: 6px 0 10px;
+            font-size: 0.96rem;
+            color: var(--text-soft);
+        }
+        ul {
+            margin: 8px 0 10px 20px;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+            color: var(--text-soft);
+        }
+
+        .card {
+            background: radial-gradient(circle at top left, #111827 0, #020617 40%);
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            padding: 16px 18px;
+            margin: 16px 0;
+            box-shadow: 0 20px 35px rgba(15, 23, 42, 0.75);
+        }
+
+        .image-slot {
+            border-radius: 12px;
+            border: 1px dashed rgba(148, 163, 184, 0.7);
+            padding: 10px 14px;
+            text-align: center;
+            color: var(--text-soft);
+            font-size: 0.86rem;
+            margin: 18px 0;
+            background: rgba(15, 23, 42, 0.7);
+        }
+        .image-slot strong { color: var(--accent); }
+
+        code {
+            font-family: Consolas, "SFMono-Regular", Menlo, Monaco, monospace;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            border: 1px solid rgba(15, 23, 42, 1);
+        }
+        pre {
+            background: radial-gradient(circle at top left, #020617 0, #020617 40%, #000 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(15, 23, 42, 1);
+            padding: 12px 14px;
+            overflow-x: auto;
+            margin: 10px 0 14px;
+            font-size: 0.84rem;
+        }
+        pre code {
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        .note {
+            border-radius: 10px;
+            border-left: 4px solid var(--accent);
+            background: var(--accent-soft);
+            padding: 8px 12px;
+            margin: 12px 0;
+            font-size: 0.86rem;
+        }
+        .warning {
+            border-radius: 10px;
+            border-left: 4px solid var(--danger);
+            background: rgba(248, 113, 113, 0.1);
+            padding: 8px 12px;
+            margin: 12px 0;
+            font-size: 0.86rem;
+        }
+
+        .pill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .pill {
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            font-size: 0.78rem;
+            color: var(--text-soft);
+        }
+
+        footer {
+            margin-top: 36px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(148, 163, 184, 0.3);
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        @media (max-width: 700px) {
+            .layout { padding: 20px 14px 30px; }
+            header h1 { font-size: 1.7rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+
+    <header>
+        <div class="badge">
+            <span></span> Guía práctica · Destilación de modelos de IA
+        </div>
+        <h1>Destilación de un clasificador de sentimientos: Teacher → Student</h1>
+        <p>
+            Guía paso a paso en Windows (PowerShell) para destilar un modelo experto en sentimientos
+            a un modelo ligero y comparar sus resultados con frases “trampa”.
+        </p>
+    </header>
+
+    <!-- IMAGEN 1: descarga / entrenamiento de la destilación -->
+    <div class="image-slot">
+        <strong>Imagen 1</strong> — Captura de la consola mostrando la descarga de modelos y el
+        proceso de entrenamiento / destilación (barras de progreso y logs de entrenamiento).
+    </div>
+
+    <section class="card">
+        <h2>1. Objetivo de la práctica</h2>
+        <p>
+            En esta práctica vas a tomar un modelo <strong>teacher</strong> ya entrenado para análisis
+            de sentimientos y destilar su conocimiento a un modelo <strong>student</strong> mucho más
+            pequeño, manteniendo un rendimiento alto pero con menor coste computacional.
+        </p>
+
+        <ul>
+            <li>Teacher: <code>distilbert/distilbert-base-uncased-finetuned-sst-2-english</code>.</li>
+            <li>Student: <code>prajjwal1/bert-tiny</code> adaptado a clasificación binaria.</li>
+            <li>Tarea: análisis de sentimientos (positivo / negativo) sobre el dataset SST-2.</li>
+        </ul>
+
+        <p>
+            La idea central es que el student aprenda no solo de las etiquetas correctas, sino
+            también de la distribución de probabilidades del teacher (conocimiento “oscuro”).
+        </p>
+    </section>
+
+    <section class="card">
+        <h2>2. Preparación del entorno en Windows</h2>
+
+        <h3>2.1. Crear carpeta de trabajo y entorno virtual</h3>
+        <p>Abre PowerShell y ejecuta:</p>
+        <pre><code>mkdir C:\practica-destilacion
+cd C:\practica-destilacion
+
+py -m venv venv-nuevo
+.\venv-nuevo\Scripts\Activate.ps1</code></pre>
+
+        <div class="note">
+            Si PowerShell bloquea la activación del entorno, ejecuta antes:
+            <pre><code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass</code></pre>
+        </div>
+
+        <h3>2.2. Instalar dependencias necesarias</h3>
+        <p>Con el entorno activado, instala PyTorch (CPU) y las librerías de Hugging Face:</p>
+        <pre><code>python -m pip install --upgrade pip
+
+pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu
+pip install transformers==4.44.0 datasets==2.21.0 scikit-learn==1.5.0 accelerate==0.33.0</code></pre>
+
+        <h3>2.3. Comprobar versiones</h3>
+        <pre><code>python -c "import torch, transformers, datasets; \
+print('Torch:', torch.__version__); \
+print('Transformers:', transformers.__version__); \
+print('Datasets:', datasets.__version__)"</code></pre>
+
+        <div class="pill-list">
+            <div class="pill">Windows + PowerShell</div>
+            <div class="pill">Python 3.x</div>
+            <div class="pill">PyTorch CPU</div>
+            <div class="pill">Transformers</div>
+            <div class="pill">Datasets</div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>3. Entrenamiento del modelo Student por destilación</h2>
+
+        <h3>3.1. Script de destilación (<code>destilar.py</code>)</h3>
+        <p>
+            Crea el archivo <code>destilar.py</code> en la carpeta del proyecto y pega el siguiente código.
+            Este script:
+        </p>
+        <ul>
+            <li>Carga el teacher y el student.</li>
+            <li>Tokeniza el dataset SST-2.</li>
+            <li>Define un <em>Trainer</em> con función de pérdida de destilación.</li>
+            <li>Entrena el student y guarda el modelo destilado.</li>
+        </ul>
+
+        <pre><code>import numpy as np
+import torch
+import torch.nn.functional as F
+from datasets import load_dataset
+from transformers import (
+    AutoTokenizer,
+    AutoModelForSequenceClassification,
+    TrainingArguments,
+    Trainer,
+    DataCollatorWithPadding,
+)
+from sklearn.metrics import accuracy_score, f1_score
+
+torch.manual_seed(42)
+
+teacher_id = "distilbert/distilbert-base-uncased-finetuned-sst-2-english"
+student_id = "prajjwal1/bert-tiny"
+
+tokenizer = AutoTokenizer.from_pretrained(student_id)
+teacher_model = AutoModelForSequenceClassification.from_pretrained(teacher_id)
+student_model = AutoModelForSequenceClassification.from_pretrained(
+    student_id, num_labels=2
+)
+
+# 1. Dataset SST-2 (GLUE)
+dataset = load_dataset("glue", "sst2")
+
+def tokenize_function(examples):
+    return tokenizer(examples["sentence"], truncation=True, max_length=128)
+
+tokenized = dataset.map(tokenize_function, batched=True)
+tokenized = tokenized.rename_column("label", "labels")
+tokenized = tokenized.remove_columns(["sentence", "idx"])
+tokenized.set_format("torch")
+
+# Para ir más rápido durante la práctica (opcional)
+tokenized["train"] = tokenized["train"].select(range(5000))
+
+data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+
+def compute_metrics(eval_pred):
+    predictions, labels = eval_pred
+    predictions = np.argmax(predictions, axis=1)
+    return {
+        "accuracy": accuracy_score(labels, predictions),
+        "f1": f1_score(labels, predictions, average="weighted"),
+    }
+
+# 2. Trainer con destilación
+class DistillationTrainer(Trainer):
+    def __init__(self, teacher_model, temperature=2.0, alpha=0.8, **kwargs):
+        super().__init__(**kwargs)
+        self.teacher_model = teacher_model
+        self.teacher_model.eval()
+        for param in self.teacher_model.parameters():
+            param.requires_grad = False
+        self.temperature = temperature
+        self.alpha = alpha
+
+    def compute_loss(self, model, inputs, return_outputs=False):
+        labels = inputs.get("labels")
+
+        # Estudiante
+        outputs_student = model(**inputs)
+        student_logits = outputs_student.logits
+
+        # Profesor (sin labels ni token_type_ids)
+        with torch.no_grad():
+            teacher_inputs = {
+                k: v
+                for k, v in inputs.items()
+                if k not in ["labels", "token_type_ids"]
+            }
+            outputs_teacher = self.teacher_model(**teacher_inputs)
+            teacher_logits = outputs_teacher.logits
+
+        # Pérdida normal (etiquetas duras)
+        ce_loss = F.cross_entropy(student_logits, labels)
+
+        # Pérdida de destilación (KL con temperatura)
+        T = self.temperature
+        distill_loss = F.kl_div(
+            F.log_softmax(student_logits / T, dim=-1),
+            F.softmax(teacher_logits / T, dim=-1),
+            reduction="batchmean",
+        ) * (T ** 2)
+
+        # Combinación
+        loss = (1 - self.alpha) * ce_loss + self.alpha * distill_loss
+
+        return (loss, outputs_student) if return_outputs else loss
+
+training_args = TrainingArguments(
+    output_dir="./distilled_model",
+    num_train_epochs=2,
+    per_device_train_batch_size=16,
+    per_device_eval_batch_size=32,
+    learning_rate=5e-5,
+    weight_decay=0.01,
+    evaluation_strategy="epoch",
+    save_strategy="epoch",
+    load_best_model_at_end=True,
+    logging_steps=50,
+    report_to=None,
+)
+
+trainer = DistillationTrainer(
+    model=student_model,
+    args=training_args,
+    train_dataset=tokenized["train"],
+    eval_dataset=tokenized["validation"],
+    tokenizer=tokenizer,
+    data_collator=data_collator,
+    compute_metrics=compute_metrics,
+    teacher_model=teacher_model,
+)
+
+print("🚀 Iniciando destilación...")
+trainer.train()
+
+print("\n📊 Evaluación final:")
+print(trainer.evaluate())
+
+trainer.save_model("./modelo_final")
+print("💾 Modelo guardado en ./modelo_final")
+
+print(f"\n🔍 Comparación:")
+print(f"Teacher: {sum(p.numel() for p in teacher_model.parameters())/1e6:.1f}M parámetros")
+print(f"Student: {sum(p.numel() for p in student_model.parameters())/1e6:.1f}M parámetros")</code></pre>
+
+        <h3>3.2. Lanzar el entrenamiento</h3>
+        <pre><code>python destilar.py</code></pre>
+
+        <p>
+            Al finalizar verás la accuracy y el F1 del modelo destilado, junto con el número de
+            parámetros de teacher y student.
+        </p>
+    </section>
+
+    <!-- IMAGEN 2: prueba simple con porcentaje de confianza -->
+    <div class="image-slot">
+        <strong>Imagen 2</strong> — Captura de la prueba del modelo destilado con varias frases
+        sencillas, mostrando para cada una la etiqueta predicha (positiva / negativa) y el porcentaje
+        de confianza.
+    </div>
+
+    <section class="card">
+        <h2>4. Prueba rápida del modelo destilado</h2>
+        <p>
+            Antes de pasar a los acertijos, puedes comprobar que el modelo destilado funciona bien
+            con ejemplos sencillos.
+        </p>
+
+        <h3>4.1. Script de prueba básica</h3>
+        <pre><code>from transformers import pipeline
+
+# Cargar el modelo destilado (student)
+classifier = pipeline(
+    "sentiment-analysis",
+    model="./modelo_final",
+    tokenizer="prajjwal1/bert-tiny"
+)
+
+frases = [
+    "This movie is absolutely amazing!",
+    "I hate this terrible film.",
+    "The acting was okay, nothing special.",
+    "Best experience of my life, loved it.",
+]
+
+print("Resultados del modelo destilado:\n")
+for texto in frases:
+    r = classifier(texto)[0]
+    print(f"Texto: {texto}")
+    print(f"→ Predicción: {r['label']} (confianza: {r['score']:.2%})\n")</code></pre>
+
+        <p>
+            En esta fase deberías observar decisiones coherentes y un nivel de confianza razonable
+            en frases típicas de reseñas de película.
+        </p>
+    </section>
+
+    <!-- IMAGEN 3: resultados acertijos donde el profesor acierta más -->
+    <div class="image-slot">
+        <strong>Imagen 3</strong> — Primera parte de la salida de los acertijos, donde se ven
+        varios ejemplos en los que el teacher acierta la etiqueta correcta y el student se equivoca
+        (incluyendo texto, “trampa” y porcentaje de confianza).
+    </div>
+
+    <!-- IMAGEN 4: resultados acertijos donde el profesor sigue superando al alumno -->
+    <div class="image-slot">
+        <strong>Imagen 4</strong> — Resto de la salida de los acertijos y resumen final, mostrando
+        cuántos aciertos logra el teacher frente al student en este conjunto de frases difíciles.
+    </div>
+
+    <section class="card">
+        <h2>5. Comparación Teacher vs Student con acertijos</h2>
+
+        <p>
+            Para poner a prueba la calidad real de ambos modelos, usaremos frases con sarcasmo,
+            ironía y dobles negaciones donde es fácil equivocarse.
+        </p>
+
+        <h3>5.1. Script de comparación con acertijos</h3>
+        <pre><code>from transformers import pipeline
+
+print("🔄 Cargando modelos...")
+teacher = pipeline(
+    "sentiment-analysis",
+    model="distilbert/distilbert-base-uncased-finetuned-sst-2-english"
+)
+student = pipeline(
+    "sentiment-analysis",
+    model="./modelo_final",
+    tokenizer="prajjwal1/bert-tiny"
+)
+
+acerijos = [
+    {
+        "texto": "Oh great, another meeting that could've been an email. Just what I needed.",
+        "trampa": "Sarcasmo: 'great' es positivo pero el contexto es negativo",
+        "correcto": "NEGATIVE",
+    },
+    {
+        "texto": "The plot was so predictable I fell asleep twice, but at least the seats were comfortable.",
+        "trampa": "Mixto: algo positivo en una reseña globalmente negativa",
+        "correcto": "NEGATIVE",
+    },
+    {
+        "texto": "Well, that was 3 hours of my life I'll never get back. Thanks, I guess?",
+        "trampa": "Ironía: 'thanks' suele ser positivo, pero aquí es queja",
+        "correcto": "NEGATIVE",
+    },
+    {
+        "texto": "Not bad at all, actually quite impressive!",
+        "trampa": "Doble negación: 'not bad' = elogio",
+        "correcto": "POSITIVE",
+    },
+    {
+        "texto": "If you enjoy watching paint dry, this movie is definitely for you.",
+        "trampa": "Sarcasmo indirecto: compara con algo aburrido",
+        "correcto": "NEGATIVE",
+    },
+    {
+        "texto": "The special effects were amazing. Too bad the story made no sense whatsoever.",
+        "trampa": "Inicio positivo, remate negativo: balance global negativo",
+        "correcto": "NEGATIVE",
+    },
+    {
+        "texto": "I've seen worse... but I've also seen way better.",
+        "trampa": "Tono tibio, ligeramente inclinado a lo negativo",
+        "correcto": "NEGATIVE",
+    },
+    {
+        "texto": "Sure, the acting was okay if you like wooden performances and awkward pauses.",
+        "trampa": "Sarcasmo: 'okay' seguido de críticas claras",
+        "correcto": "NEGATIVE",
+    },
+    {
+        "texto": "It wasn't terrible, but I wouldn't recommend it to anyone I actually like.",
+        "trampa": "Negación + ironía: la parte clave es que no lo recomienda",
+        "correcto": "NEGATIVE",
+    },
+    {
+        "texto": "The movie had a beginning, a middle, and an end. That's about all the good I can say.",
+        "trampa": "Elogio mínimo: estructura básica pero opinión general negativa",
+        "correcto": "NEGATIVE",
+    },
+]
+
+print("\n" + "="*80)
+print("🧩 ACERIJOS: ¿Dónde falla el estudiante?")
+print("="*80)
+
+aciertos_teacher = 0
+aciertos_student = 0
+
+for i, item in enumerate(acerijos, 1):
+    texto = item["texto"]
+    trampa = item["trampa"]
+    correcto = item["correcto"]
+
+    t_pred = teacher(texto)[0]
+    s_pred = student(texto)[0]
+
+    t_acierta = t_pred["label"] == correcto
+    s_acierta = s_pred["label"] == correcto
+
+    if t_acierta:
+        aciertos_teacher += 1
+    if s_acierta:
+        aciertos_student += 1
+
+    emoji = "✅" if t_acierta == s_acierta else "⚠️"
+
+    print(f"\n{emoji} ACERTIJO #{i}")
+    print(f"📝 Texto: '{texto}'")
+    print(f"💡 Trampa: {trampa}")
+    print(f"✔️ Correcto: {correcto}")
+    print(
+        f"👨‍🏫 Teacher: {t_pred['label']} ({t_pred['score']:.2%}) "
+        f\"{'✅' if t_acierta else '❌'}\""
+    )
+    print(
+        f"👨‍🎓 Student: {s_pred['label']} ({s_pred['score']:.2%}) "
+        f\"{'✅' if s_acierta else '❌'}\""
+    )
+
+    if t_acierta and not s_acierta:
+        print("🔴 ¡El TEACHER acierta pero el STUDENT falla!")
+
+print("\n" + "="*80)
+print("📊 RESULTADOS:")
+print(
+    f"👨‍🏫 Teacher: {aciertos_teacher}/{len(acerijos)} aciertos "
+    f"({aciertos_teacher/len(acerijos)*100:.0f}%)"
+)
+print(
+    f"👨‍🎓 Student: {aciertos_student}/{len(acerijos)} aciertos "
+    f"({aciertos_student/len(acerijos)*100:.0f}%)"
+)
+print(f"📉 Diferencia: Teacher +{aciertos_teacher - aciertos_student} aciertos")
+print("="*80)</code></pre>
+
+        <p>
+            En los resultados deberías observar casos donde el teacher sigue siendo más robusto en
+            este tipo de frases complicadas, lo que ilustra la diferencia entre un modelo grande y su
+            versión destilada.
+        </p>
+    </section>
+
+    <footer>
+        Guía elaborada para documentar la práctica de destilación de modelos de lenguaje:
+        configuración del entorno, entrenamiento del student y análisis comparativo teacher vs student.
+    </footer>
+
+</div>
+</body>
+</html>
 
