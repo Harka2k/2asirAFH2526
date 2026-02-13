@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Guía práctica: Agente IA local con Kilo Code y LM Studio</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --bg-alt: #020617;
+            --card: #020617;
+            --accent: #38bdf8;
+            --accent-soft: rgba(56,189,248,0.14);
+            --text: #e5e7eb;
+            --text-soft: #9ca3af;
+            --border: #1f2933;
+            --danger: #f97373;
+            --muted: #4b5563;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #111827 0, #020617 50%, #000 100%);
+            color: var(--text);
+        }
+        .layout {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 20px 40px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        header h1 {
+            font-size: 2.2rem;
+            margin: 0 0 8px;
+            letter-spacing: 0.02em;
+        }
+        header p {
+            margin: 0;
+            color: var(--text-soft);
+            font-size: 0.98rem;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: rgba(15, 23, 42, 0.85);
+            color: var(--text-soft);
+            font-size: 0.78rem;
+            margin-bottom: 10px;
+        }
+        .badge span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #22c55e;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
+        }
+
+        h2 {
+            margin: 30px 0 10px;
+            font-size: 1.35rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+            padding-bottom: 6px;
+        }
+        h3 {
+            margin: 18px 0 8px;
+            font-size: 1.05rem;
+            color: var(--accent);
+        }
+        p {
+            margin: 6px 0 10px;
+            font-size: 0.96rem;
+            color: var(--text-soft);
+        }
+        ul {
+            margin: 8px 0 10px 20px;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+            color: var(--text-soft);
+        }
+
+        .card {
+            background: radial-gradient(circle at top left, #111827 0, #020617 40%);
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            padding: 16px 18px;
+            margin: 16px 0;
+            box-shadow: 0 20px 35px rgba(15, 23, 42, 0.75);
+        }
+
+        .image-slot {
+            border-radius: 12px;
+            border: 1px dashed rgba(148, 163, 184, 0.7);
+            padding: 10px 14px;
+            text-align: center;
+            color: var(--text-soft);
+            font-size: 0.86rem;
+            margin: 18px 0;
+            background: rgba(15, 23, 42, 0.7);
+        }
+        .image-slot strong { color: var(--accent); }
+
+        code {
+            font-family: Consolas, "SFMono-Regular", Menlo, Monaco, monospace;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            border: 1px solid rgba(15, 23, 42, 1);
+        }
+        pre {
+            background: radial-gradient(circle at top left, #020617 0, #020617 40%, #000 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(15, 23, 42, 1);
+            padding: 12px 14px;
+            overflow-x: auto;
+            margin: 10px 0 14px;
+            font-size: 0.84rem;
+        }
+        pre code {
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        .note {
+            border-radius: 10px;
+            border-left: 4px solid var(--accent);
+            background: var(--accent-soft);
+            padding: 8px 12px;
+            margin: 12px 0;
+            font-size: 0.86rem;
+        }
+        .warning {
+            border-radius: 10px;
+            border-left: 4px solid var(--danger);
+            background: rgba(248, 113, 113, 0.1);
+            padding: 8px 12px;
+            margin: 12px 0;
+            font-size: 0.86rem;
+        }
+
+        .pill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .pill {
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            font-size: 0.78rem;
+            color: var(--text-soft);
+        }
+
+        footer {
+            margin-top: 36px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(148, 163, 184, 0.3);
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        @media (max-width: 700px) {
+            .layout { padding: 20px 14px 30px; }
+            header h1 { font-size: 1.7rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+
+    <header>
+        <div class="badge">
+            <span></span> Guía práctica · Agentes IA locales
+        </div>
+        <h1>Configuración de un agente IA local con Kilo Code y LM Studio</h1>
+        <p>
+            Guía paso a paso en Windows para usar Kilo Code en Visual Studio Code conectado a un modelo
+            de lenguaje ejecutado en local mediante LM Studio y GPU.
+        </p>
+    </header>
+    <section class="card">
+        <h2>1. Objetivo de la práctica</h2>
+        <p>
+            El objetivo es dejar configurado un agente de programación que funcione completamente en local:
+            Kilo Code actuará como asistente dentro de VS Code y LM Studio ejecutará el modelo LLM
+            (por ejemplo, un modelo de tipo coder como DeepSeek) usando la GPU del equipo.[web:95][web:16]
+        </p>
+        <p>
+            De esta forma se consigue privacidad sobre el código, se evitan costes de API en la nube y se
+            aprovecha la potencia de la tarjeta gráfica para acelerar la generación de código.[web:1][web:41]
+        </p>
+
+        <ul>
+            <li>Editor: Visual Studio Code con la extensión Kilo Code instalada.[web:93][web:95]</li>
+            <li>Servidor de modelos: LM Studio ejecutando un modelo GGUF en local.[web:16]</li>
+            <li>Conexión: API compatible con OpenAI en <code>http://localhost:1234</code> consumida por Kilo Code.[web:16]</li>
+        </ul>
+
+        <div class="pill-list">
+            <div class="pill">VS Code</div>
+            <div class="pill">Kilo Code</div>
+            <div class="pill">LM Studio</div>
+            <div class="pill">GPU local</div>
+            <div class="pill">Modelos GGUF</div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>2. Instalación de Kilo Code en VS Code</h2>
+
+        <h3>2.1. Añadir la extensión</h3>
+        <p>
+            Abre Visual Studio Code y ve al panel de extensiones con <code>Ctrl + Shift + X</code>.
+            En el buscador escribe <code>Kilo Code</code> y selecciona la extensión oficial publicada
+            en el Marketplace.[web:93][web:94]
+        </p>
+        <p>
+            Pulsa en <strong>Install</strong> y, cuando termine, recarga la ventana de VS Code si se solicita.
+            Deberías ver un nuevo icono de Kilo Code en la barra lateral izquierda o derecha del editor.[web:95]
+        </p>
+
+        <h3>2.2. Verificar la instalación</h3>
+        <p>
+            Haz clic en el icono de Kilo Code para abrir su panel. Si se abre un área lateral con opciones
+            de proveedor y un cuadro de chat, la extensión está instalada correctamente y lista para
+            conectarse a un modelo local.
+        </p>
+    </section>
+    <img src="Imagenes/imagen1" alt="imagen1"> <br>
+    <img src="Imagenes/imagen2" alt="imagen2">
+    <section class="card">
+        <h2>3. Configuración de Kilo Code con LM Studio</h2>
+
+        <h3>3.1. Seleccionar proveedor “LM Studio”</h3>
+        <p>
+            En el panel de Kilo Code, pulsa el icono de engranaje para abrir la configuración.
+            En el apartado <strong>API Provider</strong> selecciona la opción
+            <code>LM Studio</code>, que permite a Kilo Code usar el servidor local expuesto por LM Studio.[web:16]
+        </p>
+
+        <h3>3.2. Ajustar URL y Model ID</h3>
+        <p>
+            En el campo <strong>Base URL</strong> introduce
+            <code>http://localhost:1234</code>, que es la dirección por defecto del servidor HTTP
+            de LM Studio cuando se ejecuta el local server.[web:16]
+        </p>
+        <p>
+            En <strong>Model ID</strong> escribe exactamente el identificador del modelo cargado
+            en LM Studio (normalmente coincide con el nombre del archivo GGUF, por ejemplo
+            <code>deepseek-coder-v2-lite-instruct-q5_k_m.gguf</code>). Esto indica a Kilo Code qué
+            modelo debe usar para las peticiones.
+        </p>
+        <p>
+            Tuvimos problemas a la hora de poner en marcha el enlazamiento por que no nos salia el modelo, reinstalamos kilo code y nos empezo a salir.
+        </p>
+        <div class="note">
+            Si cambias el modelo activo en LM Studio, recuerda actualizar también el
+            <strong>Model ID</strong> en la configuración de Kilo Code para que ambos coincidan.[web:16]
+        </div>
+    </section>
+
+     <img src="Imagenes/imagen3" alt="imagen3">
+    <section class="card">
+        <h2>4. Puesta en marcha del modelo en LM Studio</h2>
+
+        <h3>4.1. Cargar el modelo en el Local Server</h3>
+        <p>
+            Abre LM Studio y ve a la pestaña <strong>Local Server</strong> o al panel destinado a
+            exponer la API compatible con OpenAI.[web:41][web:16] Selecciona en la lista un modelo
+            de codificación (por ejemplo DeepSeek Coder o un modelo tipo Qwen/CodeLlama en formato GGUF)
+            y pulsa <strong>Start Server</strong> hasta que aparezca el estado “Running”.
+        </p>
+
+        <h3>4.2. Probar generación en Developer</h3>
+        <p>
+            Cambia a la pestaña <strong>Developer</strong> de LM Studio e introduce un prompt de prueba,
+            por ejemplo: <code>Escribe una función PHP que conecte a MySQL usando PDO</code>. Si el
+            modelo responde con código, el servidor local está funcionando correctamente.
+        </p>
+
+        <pre><code>curl http://localhost:1234/v1/models</code></pre>
+        <p>
+            El comando anterior, ejecutado desde PowerShell o la terminal integrada de VS Code, debería
+            devolver un listado JSON de modelos disponibles en el servidor de LM Studio, donde verás
+            el identificador del modelo de codificación que estás utilizando.[web:41]
+        </p>
+    </section>
+
+     <img src="Imagenes/imagen4" alt="imagen1">
+    <section class="card">
+        <h2>5. Comprobación del uso de GPU</h2>
+
+        <h3>5.1. Monitorizar la GPU con LM Studio</h3>
+        <p>
+            Abre el Administrador de tareas de Windows, ve a la pestaña <strong>Rendimiento</strong> y
+            selecciona la GPU. Deja esta ventana a un lado de la pantalla y, al mismo tiempo, realiza
+            una generación larga de texto desde la pestaña Developer de LM Studio.
+        </p>
+        <p>
+            Mientras el modelo responde, deberían observarse picos de actividad en la gráfica de la GPU,
+            lo que confirma que la inferencia se está realizando de forma acelerada por hardware.
+        </p>
+
+        <div class="warning">
+            Si los picos aparecen en CPU pero no en GPU, revisa la configuración del modelo en
+            LM Studio y asegúrate de que está usando el runtime de GPU adecuado antes de repetir
+            la captura.
+        </div>
+    </section>
+
+    <img src="Imagenes/imagen5" alt="imagen5">
+
+    <section class="card">
+        <h2>6. Uso de Kilo Code como agente IA local</h2>
+
+        <h3>6.1. Enviar una tarea desde VS Code</h3>
+        <p>
+            Con el servidor de LM Studio en marcha y Kilo Code configurado, abre un proyecto en VS Code
+            y accede al panel de chat de Kilo Code. Escribe una petición como:
+        </p>
+        <pre><code>Crea una aplicación PHP completa con CRUD de usuarios en MySQL,
+usando PDO, validación básica de formularios y sesiones para el login.</code></pre>
+        <p>
+            Kilo Code enviará la petición al modelo en LM Studio, recibirá la respuesta y propondrá
+            cambios o archivos nuevos dentro de tu espacio de trabajo. Durante la generación, la
+            gráfica de GPU en el Administrador de tareas volverá a mostrar picos de uso, indicando
+            que el agente está trabajando en local.
+        </p>
+
+        <h3>6.2. Verificación de que se usa el modelo local</h3>
+        <p>
+            Para confirmar que Kilo Code no está usando un proveedor en la nube, puedes lanzar otra
+            vez <code>curl http://localhost:1234/v1/models</code> mientras pides código desde el chat
+            de Kilo Code y observar que LM Studio registra peticiones nuevas en sus logs.[web:16][web:41]
+        </p>
+    </section>
+
+    <footer>
+        Guía elaborada para documentar la práctica de configuración de un agente IA local
+        usando Kilo Code en Visual Studio Code y un modelo LLM ejecutado mediante LM Studio.
+    </footer>
+
+</div>
+</body>
+</html>
