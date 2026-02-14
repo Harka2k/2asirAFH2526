@@ -1,1 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Guía práctica: Cuantización de un modelo de lenguaje (FP16 → GGUF)</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --bg-alt: #020617;
+            --card: #020617;
+            --accent: #38bdf8;
+            --accent-soft: rgba(56,189,248,0.14);
+            --text: #e5e7eb;
+            --text-soft: #9ca3af;
+            --border: #1f2933;
+            --danger: #f97373;
+            --muted: #4b5563;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #111827 0, #020617 50%, #000 100%);
+            color: var(--text);
+        }
+        .layout {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 20px 40px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        header h1 {
+            font-size: 2.2rem;
+            margin: 0 0 8px;
+            letter-spacing: 0.02em;
+        }
+        header p {
+            margin: 0;
+            color: var(--text-soft);
+            font-size: 0.98rem;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: rgba(15, 23, 42, 0.85);
+            color: var(--text-soft);
+            font-size: 0.78rem;
+            margin-bottom: 10px;
+        }
+        .badge span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #22c55e;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
+        }
+
+        h2 {
+            margin: 30px 0 10px;
+            font-size: 1.35rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+            padding-bottom: 6px;
+        }
+        h3 {
+            margin: 18px 0 8px;
+            font-size: 1.05rem;
+            color: var(--accent);
+        }
+        p {
+            margin: 6px 0 10px;
+            font-size: 0.96rem;
+            color: var(--text-soft);
+        }
+        ul {
+            margin: 8px 0 10px 20px;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+            color: var(--text-soft);
+        }
+
+        .card {
+            background: radial-gradient(circle at top left, #111827 0, #020617 40%);
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            padding: 16px 18px;
+            margin: 16px 0;
+            box-shadow: 0 20px 35px rgba(15, 23, 42, 0.75);
+        }
+
+        .image-slot {
+            border-radius: 12px;
+            border: 1px dashed rgba(148, 163, 184, 0.7);
+            padding: 10px 14px;
+            text-align: center;
+            color: var(--text-soft);
+            font-size: 0.86rem;
+            margin: 18px 0;
+            background: rgba(15, 23, 42, 0.7);
+        }
+        .image-slot strong { color: var(--accent); }
+
+        code {
+            font-family: Consolas, "SFMono-Regular", Menlo, Monaco, monospace;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            border: 1px solid rgba(15, 23, 42, 1);
+        }
+        pre {
+            background: radial-gradient(circle at top left, #020617 0, #020617 40%, #000 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(15, 23, 42, 1);
+            padding: 12px 14px;
+            overflow-x: auto;
+            margin: 10px 0 14px;
+            font-size: 0.84rem;
+        }
+        pre code {
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        .note {
+            border-radius: 10px;
+            border-left: 4px solid var(--accent);
+            background: var(--accent-soft);
+            padding: 8px 12px;
+            margin: 12px 0;
+            font-size: 0.86rem;
+        }
+        .warning {
+            border-radius: 10px;
+            border-left: 4px solid var(--danger);
+            background: rgba(248, 113, 113, 0.1);
+            padding: 8px 12px;
+            margin: 12px 0;
+            font-size: 0.86rem;
+        }
+
+        .pill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .pill {
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            font-size: 0.78rem;
+            color: var(--text-soft);
+        }
+
+        footer {
+            margin-top: 36px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(148, 163, 184, 0.3);
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        @media (max-width: 700px) {
+            .layout { padding: 20px 14px 30px; }
+            header h1 { font-size: 1.7rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+
+    <header>
+        <div class="badge">
+            <span></span> Guía práctica · Cuantización de modelos de IA
+        </div>
+        <h1>Cuantización de un modelo de lenguaje para ejecutarlo en local</h1>
+        <p>
+            Documento de la práctica en Windows (PowerShell) donde se parte de un modelo en alta precisión,
+            se convierte a formato GGUF cuantizado y se comparan velocidad y tamaño entre ambas versiones.
+        </p>
+    </header>
+
+    <section class="card">
+        <h2>1. Objetivo de la práctica</h2>
+        <p>
+            El objetivo de esta práctica es tomar un modelo de lenguaje en formato de alta precisión
+            (por ejemplo FP16 en Hugging Face) y convertirlo a un único archivo <code>.gguf</code>
+            cuantizado que pueda ejecutarse de forma fluida en un ordenador de usuario.
+        </p>
+        <p>
+            Para demostrar el efecto de la cuantización se han medido dos aspectos: el tamaño del
+            archivo del modelo en disco (peso en GB) y la velocidad de generación de texto medida en
+            tokens por segundo antes y después del proceso.
+        </p>
+        <ul>
+            <li>Modelo base: checkpoint oficial en formato Hugging Face o modelo descargado desde LM Studio.</li>
+            <li>Herramienta de conversión: script <code>convert_hf_to_gguf.py</code> incluido en <code>llama.cpp</code> [web:5][web:12].</li>
+            <li>Formato final: <code>.gguf</code> cuantizado listo para usar en LM Studio u otras interfaces compatibles [web:10][web:18].</li>
+        </ul>
+        <div class="pill-list">
+            <div class="pill">Cuantización</div>
+            <div class="pill">GGUF</div>
+            <div class="pill">LM Studio</div>
+            <div class="pill">Windows + PowerShell</div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>2. Preparación del entorno en Windows</h2>
+
+        <h3>2.1. Carpeta de trabajo y entorno virtual</h3>
+        <p>Los comandos se han ejecutado en PowerShell creando primero una carpeta específica para la práctica.</p>
+        <pre><code>mkdir C:\cuantizacion-ia
+cd C:\cuantizacion-ia
+
+py -m venv venv-llm
+.\venv-llm\Scripts\Activate.ps1</code></pre>
+
+        <div class="note">
+            Si PowerShell bloquea la activación del entorno, se puede ejecutar temporalmente:
+            <pre><code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass</code></pre>
+        </div>
+
+        <h3>2.2. Descarga de <code>llama.cpp</code> y requisitos</h3>
+        <p>
+            A continuación se clona el repositorio de <code>llama.cpp</code> y se instalan las
+            dependencias de Python necesarias para usar el conversor a GGUF [web:5].
+        </p>
+        <pre><code>git clone https://github.com/ggerganov/llama.cpp.git
+cd .\llama.cpp
+pip install -r .\requirements.txt
+cd ..</code></pre>
+
+        <h3>2.3. Descarga del modelo original</h3>
+        <p>
+            El modelo de partida se descarga desde Hugging Face mediante <code>git clone</code>, lo que
+            genera una carpeta con varios archivos de pesos (por ejemplo <code>.safetensors</code>) y metadatos.
+        </p>
+        <pre><code>git lfs install
+git clone https://huggingface.co/microsoft/Phi-3-mini-4k-instruct</code></pre>
+
+        <p>
+            En otros casos se han utilizado modelos que ya se ofrecen en varios niveles de cuantización
+            (FP16, Q8_0, Q4_K_M) como Qwen3-VL-4B-Instruct-GGUF, que publica directamente pesos en
+            formato GGUF listos para su uso [web:11][web:14].
+        </p>
+    </section>
+
+    <section class="card">
+        <h2>3. Proceso de cuantización y conversión a GGUF</h2>
+
+        <h3>3.1. Conversión con <code>convert_hf_to_gguf.py</code></h3>
+        <p>
+            La cuantización se realiza ejecutando el script <code>convert_hf_to_gguf.py</code>, que
+            permite elegir el formato de salida mediante el argumento <code>--outtype</code> (por ejemplo
+            <code>f16</code> o <code>q8_0</code>) [web:5][web:12].
+        </p>
+        <pre><code>python .\llama.cpp\convert_hf_to_gguf.py .\Phi-3-mini-4k-instruct `
+  --outtype q8_0 `
+  --outfile phi-3-mini-q8.gguf</code></pre>
+
+        <p>
+            En esta práctica se ha utilizado la opción <code>q8_0</code>, que aplica cuantización de 8 bits
+            y reduce aproximadamente a la mitad la huella de memoria frente a FP16, manteniendo una
+            calidad muy alta del modelo [web:12].
+        </p>
+
+        <div class="note">
+            Algunas versiones antiguas del script no aceptan formatos más agresivos como
+            <code>q4_k_m</code>, por lo que fue necesario adaptar el comando a las opciones
+            realmente soportadas en la versión instalada.
+        </div>
+
+        <h3>3.2. Verificación del archivo generado</h3>
+        <p>
+            Una vez finalizado el proceso, en la carpeta de trabajo aparece el archivo
+            <code>phi-3-mini-q8.gguf</code>. Para comprobar su creación y tamaño se ha utilizado
+            el comando nativo de PowerShell <code>dir</code> en lugar de <code>ls -lh</code>, que
+            provocaba un error de parámetros al venir de sintaxis Linux.
+        </p>
+        <pre><code>dir .\phi-3-mini-q8.gguf</code></pre>
+
+        <div class="warning">
+            Un error frecuente durante la práctica fue ejecutar el conversor desde la carpeta
+            equivocada, lo que producía mensajes como <code>is not a directory</code> al indicar
+            mal la ruta del modelo. La solución consistió en situarse en <code>C:\cuantizacion-ia</code>
+            y revisar las rutas con <code>dir</code> antes de repetir el comando.
+        </div>
+    </section>
+     <img src="Imagenes/imagen1.png" alt="imagen1" width="80%"> <br>
+     <img src="Imagenes/imagen2.png" alt="imagen2" width="80%">
+    <section class="card">
+        <h2>4. Comparación entre modelo original y modelo cuantizado</h2>
+
+        <h3>4.1. Tamaño en disco</h3>
+        <p>
+            En las capturas de propiedades de archivo se observa cómo el modelo original ocupa
+            varios gigabytes en formato FP16 o similar, mientras que el archivo <code>.gguf</code>
+            cuantizado reduce de forma notable el tamaño, lo que facilita almacenarlo y moverlo
+            entre equipos.
+        </p>
+        <p>
+            Esta reducción de peso hace posible trabajar con modelos que de otra forma no cabrían
+            en la memoria de un equipo doméstico, especialmente cuando se combinan varios modelos
+            o se guardan diferentes versiones para pruebas.
+        </p>
+
+        <h3>4.2. Velocidad de generación (tokens por segundo)</h3>
+        <p>
+            Las capturas de LM Studio muestran el valor de <em>tokens/s</em> tanto para el modelo
+            sin cuantizar como para el cuantizado, evidenciando una mejora clara en la velocidad
+            de respuesta al utilizar números de menor precisión.
+        </p>
+        <p>
+            Aunque la cuantización puede introducir una pequeña pérdida de precisión en las
+            respuestas, para el uso práctico en local el equilibrio entre calidad y velocidad
+            resulta muy favorable, especialmente al pasar de un modelo pesado a uno optimizado
+            para CPU o GPU de consumo.
+        </p>
+    </section>
+    <img src="Imagenes/imagen3.png" alt="imagen3" width="80%"><br>
+    <img src="Imagenes/imagen4.png" alt="imagen4" width="80%">
+    <section class="card">
+        <h2>5. Dificultades encontradas y cómo se resolvieron</h2>
+
+        <h3>5.1. Formatos de cuantización no soportados</h3>
+        <p>
+            Uno de los primeros problemas fue intentar cuantizar directamente con
+            <code>--outtype q4_k_m</code>, opción que no estaba disponible en la versión de
+            <code>convert_hf_to_gguf.py</code> utilizada, generando un error de
+            <em>invalid choice</em> en consola.
+        </p>
+        <p>
+            La solución consistió en revisar las opciones realmente permitidas por el script
+            (como <code>f16</code> y <code>q8_0</code>) y adaptar la práctica a
+            <code>q8_0</code>, que sigue ofreciendo una compresión importante y es ampliamente
+            compatible con herramientas como LM Studio [web:5][web:12].
+        </p>
+
+        <h3>5.2. Rutas y directorios incorrectos</h3>
+        <p>
+            Otra dificultad recurrente fue el error <code>Phi-3-mini-4k-instruct is not a directory</code>,
+            causado por ejecutar el script desde la carpeta <code>llama.cpp</code> sin ajustar la
+            ruta relativa al modelo.
+        </p>
+        <p>
+            Para solucionarlo fue necesario volver a la carpeta raíz del proyecto,
+            confirmar la presencia de la carpeta del modelo con <code>dir</code> y
+            ajustar el comando para que apuntase a la ruta correcta del directorio
+            que contiene los pesos descargados.
+        </p>
+
+        <h3>5.3. Diferencias entre comandos Linux y PowerShell</h3>
+        <p>
+            Al principio se utilizaron comandos pensados para Linux, como
+            <code>ls -lh</code>, que en PowerShell provocan errores de parámetros
+            al no reconocer la opción <code>-lh</code>.
+        </p>
+        <p>
+            La práctica permitió afianzar la diferencia entre ambas sintaxis y adoptar
+            los comandos nativos de PowerShell, como <code>dir</code> y
+            <code>Get-Item</code>, para inspeccionar archivos y tamaños.
+        </p>
+
+        <h3>5.4. Importación del modelo en LM Studio</h3>
+        <p>
+            Inicialmente se copió directamente la carpeta completa de Hugging Face dentro
+            de la carpeta de modelos locales de LM Studio, lo que produjo el error
+            <code>No ModelFormatName defined for model compatibility type: torchSafetensors</code>.
+        </p>
+        <p>
+            La causa era que LM Studio espera archivos <code>.gguf</code>, no carpetas
+            con pesos originales; la solución definitiva fue eliminar esa carpeta y
+            copiar únicamente el archivo cuantizado <code>.gguf</code> dentro de
+            <code>.lmstudio\models</code>, tras lo cual el modelo apareció correctamente
+            en la lista de modelos locales [web:10][web:16].
+        </p>
+    </section>
+
+    <footer>
+        Guía elaborada para documentar la práctica de cuantización de modelos de lenguaje:
+        configuración del entorno, conversión a GGUF, comparación de rendimiento y
+        análisis de las principales dificultades encontradas dur
 
