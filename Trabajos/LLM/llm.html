@@ -1,1 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Guía práctica: Creación de un LLM de fútbol y despliegue en LM Studio</title>
+<style>
+:root {
+  --bg: #0f172a;
+  --bg-alt: #020617;
+  --card: #020617;
+  --accent: #38bdf8;
+  --accent-soft: rgba(56,189,248,0.14);
+  --text: #e5e7eb;
+  --text-soft: #9ca3af;
+  --border: #1f2933;
+  --danger: #f97373;
+  --muted: #4b5563;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #111827 0, #020617 50%, #000 100%);
+  color: var(--text);
+}
+.layout {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px 40px;
+}
+header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+header h1 {
+  font-size: 2.2rem;
+  margin: 0 0 8px;
+  letter-spacing: 0.02em;
+}
+header p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.98rem;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.85);
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  margin-bottom: 10px;
+}
+.badge span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
+}
+h2 {
+  margin: 30px 0 10px;
+  font-size: 1.35rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+  padding-bottom: 6px;
+}
+h3 {
+  margin: 18px 0 8px;
+  font-size: 1.05rem;
+  color: var(--accent);
+}
+p {
+  margin: 6px 0 10px;
+  font-size: 0.96rem;
+  color: var(--text-soft);
+}
+ul {
+  margin: 8px 0 10px 20px;
+  padding: 0;
+}
+li {
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+  color: var(--text-soft);
+}
+.card {
+  background: radial-gradient(circle at top left, #111827 0, #020617 40%);
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  padding: 16px 18px;
+  margin: 16px 0;
+  box-shadow: 0 20px 35px rgba(15, 23, 42, 0.75);
+}
+.image-slot {
+  border-radius: 12px;
+  border: 1px dashed rgba(148, 163, 184, 0.7);
+  padding: 10px 14px;
+  text-align: center;
+  color: var(--text-soft);
+  font-size: 0.86rem;
+  margin: 18px 0;
+  background: rgba(15, 23, 42, 0.7);
+}
+.image-slot strong { color: var(--accent); }
+code {
+  font-family: Consolas, "SFMono-Regular", Menlo, Monaco, monospace;
+  background: rgba(15, 23, 42, 0.9);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  border: 1px solid rgba(15, 23, 42, 1);
+}
+pre {
+  background: radial-gradient(circle at top left, #020617 0, #020617 40%, #000 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 1);
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 10px 0 14px;
+  font-size: 0.84rem;
+}
+pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+.note {
+  border-radius: 10px;
+  border-left: 4px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 8px 12px;
+  margin: 12px 0;
+  font-size: 0.86rem;
+}
+.warning {
+  border-radius: 10px;
+  border-left: 4px solid var(--danger);
+  background: rgba(248, 113, 113, 0.1);
+  padding: 8px 12px;
+  margin: 12px 0;
+  font-size: 0.86rem;
+}
+.pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+footer {
+  margin-top: 36px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(148, 163, 184, 0.3);
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+@media (max-width: 700px) {
+  .layout { padding: 20px 14px 30px; }
+  header h1 { font-size: 1.7rem; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<header>
+  <div class="badge">
+    <span></span> Guía práctica · Creación y despliegue local de un LLM de fútbol
+  </div>
+  <h1>Crear un modelo de lenguaje sobre fútbol y usarlo en LM Studio</h1>
+  <p>
+    Documento de la práctica donde se construye un modelo de lenguaje especializado en fútbol a partir de
+    Llama&nbsp;3.2‑3B, se entrena con datos propios y se despliega el resultado en LM Studio usando formato
+    <code>.gguf</code>.[web:57]
+  </p>
+</header>
+
+<section class="card">
+  <h2>1. Objetivo del proyecto</h2>
+  <p>
+    El objetivo de esta práctica es diseñar y entrenar un LLM centrado en temática futbolística,
+    capaz de responder preguntas sobre táctica, historia, reglamento y competiciones con un estilo claro y cercano.
+  </p>
+  <p>
+    Para conseguirlo se parte de un modelo de lenguaje general (Llama&nbsp;3.2‑3B Instruct) y se construye
+    un modelo especializado, entrenado y empaquetado para ejecutarse en local en un PC con Windows y GPU dedicada.
+  </p>
+  <ul>
+    <li>Modelo base utilizado: <code>unsloth/Llama-3.2-3B-Instruct</code>.</li>
+    <li>Herramienta principal de entrenamiento: biblioteca <code>unsloth</code> sobre PyTorch y CUDA.</li>
+    <li>Formato de distribución final: archivo <code>.gguf</code> compatible con LM Studio.[web:57]</li>
+    <li>Entorno de ejecución: Windows 11, PowerShell y LM Studio.</li>
+  </ul>
+  <div class="pill-list">
+    <div class="pill">Creación de LLM</div>
+    <div class="pill">Llama&nbsp;3.2‑3B</div>
+    <div class="pill">Unsloth</div>
+    <div class="pill">GGUF</div>
+    <div class="pill">LM Studio</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>2. Preparación del entorno</h2>
+
+  <h3>2.1. Carpeta de trabajo y entorno virtual</h3>
+  <p>
+    Todo el proyecto se ha desarrollado en la carpeta <code>C:\\LLM-Training</code>, utilizando un entorno
+    virtual de Python para aislar las dependencias del resto del sistema y poder experimentar sin riesgo.
+  </p>
+  <pre><code>cd C:\
+mkdir LLM-Training
+cd LLM-Training
+
+py -3.11 -m venv venv
+.\venv\Scripts\Activate.ps1
+
+pip install --upgrade pip
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+pip install unsloth transformers datasets trl peft accelerate gguf</code></pre>
+
+  <div class="note">
+    Tras instalar los paquetes se lanzó un pequeño test con Unsloth para comprobar que la GPU
+    (RTX&nbsp;4070&nbsp;Ti) era detectada correctamente y que se podía usar <code>bfloat16</code> sin errores.
+  </div>
+
+  <h3>2.2. Descarga de herramientas externas</h3>
+  <p>
+    Para la conversión del modelo al formato final se descargó el repositorio <code>llama.cpp</code> en
+    <code>C:\\LLM-Training\\llama.cpp</code>, utilizando únicamente el script
+    <code>convert_hf_to_gguf.py</code> y los binarios ya compilados.
+  </p>
+  <p>
+    LM Studio se instaló como interfaz gráfica para cargar y ejecutar el LLM de fútbol de forma local,
+    ya que soporta modelos en formato <code>.gguf</code> organizados en una carpeta de modelos propia.[web:57]
+  </p>
+</section>
+
+<section class="card">
+  <h2>3. Diseño del LLM de fútbol</h2>
+
+  <h3>3.1. Dataset temático en formato JSONL</h3>
+  <p>
+    El conocimiento específico de fútbol se introduce a través de un fichero <code>futbol_data.jsonl</code>,
+    donde cada línea contiene una instrucción y la respuesta esperada relacionada con conceptos clave del deporte.
+  </p>
+  <pre><code>{"instruction": "Explica qué es el fuera de juego y pon un ejemplo sencillo.",
+ "input": "",
+ "output": "El fuera de juego es una regla que impide que un atacante reciba el balón..."}
+{"instruction": "Describe el sistema táctico 4-3-3 y sus principales variantes.",
+ "input": "",
+ "output": "El 4-3-3 se compone de cuatro defensas, tres centrocampistas y tres delanteros..."}
+{"instruction": "Haz un resumen de la historia de los Mundiales de fútbol.",
+ "input": "",
+ "output": "El primer Mundial se disputó en 1930 en Uruguay y desde entonces..."}</code></pre>
+
+  <p>
+    Estos ejemplos sirven de base para que el modelo aprenda a estructurar explicaciones largas,
+    comparaciones y descripciones tácticas de manera coherente.
+  </p>
+  <img src="Imagenes/image2.png" alt="dataset" width="85%">
+  <h3>3.2. Carga del dataset</h3>
+  <p>
+    En el script de entrenamiento se utiliza la librería <code>datasets</code> para leer el archivo JSONL
+    y transformarlo en un único campo de texto con el formato de conversación que espera Llama&nbsp;3.2.
+  </p>
+  <pre><code>from datasets import load_dataset
+
+dataset = load_dataset("json", data_files="futbol_data.jsonl", split="train")
+
+def format_example(example):
+    return {
+        "text": f"&lt;|begin_of_text|&gt; user\n{example['instruction']}\n assistant\n{example['output']}"
+    }
+
+dataset = dataset.map(format_example)</code></pre>
+</section>
+
+<section class="card">
+  <h2>4. Entrenamiento del modelo</h2>
+
+  <h3>4.1. Script principal de entrenamiento</h3>
+  <p>
+    El corazón del proyecto es el script <code>train_futbol.py</code>, que carga el modelo base,
+    aplica la configuración de entrenamiento y construye el nuevo LLM especializado en fútbol.
+  </p>
+  <pre><code>from unsloth import FastLanguageModel
+from trl import SFTTrainer
+from transformers import TrainingArguments
+import torch
+
+max_seq_length = 2048
+dtype = None
+load_in_4bit = True
+
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name="unsloth/Llama-3.2-3B-Instruct",
+    max_seq_length=max_seq_length,
+    dtype=dtype,
+    load_in_4bit=load_in_4bit,
+)
+
+model = FastLanguageModel.get_peft_model(
+    model,
+    r=16,
+    target_modules=["q_proj","k_proj","v_proj","o_proj",
+                    "gate_proj","up_proj","down_proj"],
+    lora_alpha=16,
+    lora_dropout=0,
+    bias="none",
+    use_gradient_checkpointing="unsloth",
+)</code></pre>
+
+  <p>
+    Con esta configuración el modelo puede entrenarse en una GPU de 12&nbsp;GB, manteniendo un tamaño de
+    contexto de 2048 tokens y concentrando el aprendizaje en las partes más importantes de la red.
+  </p>
+
+  <h3>4.2. Entrenamiento supervisado del LLM</h3>
+  <p>
+    Para ajustar el comportamiento del modelo se utiliza <code>SFTTrainer</code>, que realiza un entrenamiento
+    supervisado sobre el texto del dataset con un número moderado de pasos y un tamaño de batch reducido.
+  </p>
+  <pre><code>trainer = SFTTrainer(
+    model=model,
+    tokenizer=tokenizer,
+    train_dataset=dataset,
+    dataset_text_field="text",
+    max_seq_length=max_seq_length,
+    packing=False,
+    args=TrainingArguments(
+        per_device_train_batch_size=2,
+        gradient_accumulation_steps=4,
+        max_steps=100,
+        learning_rate=2e-4,
+        fp16=not torch.cuda.is_bf16_supported(),
+        bf16=torch.cuda.is_bf16_supported(),
+        logging_steps=1,
+        output_dir="outputs_futbol",
+    ),
+)
+
+print("Entrenando el modelo de fútbol...")
+trainer.train()
+
+print("Guardando el modelo especializado...")
+model.save_pretrained("modelo_futbol")
+tokenizer.save_pretrained("modelo_futbol")</code></pre>
+
+  <img src="Imagenes/image3.png" alt="entreno1" width="85%"><br>
+  <img src="Imagenes/image4.png" alt="entreno2" width="85%">
+</section>
+
+<section class="card">
+  <h2>5. Conversión a GGUF e integración en LM Studio</h2>
+
+  <h3>5.1. Preparación del modelo fusionado</h3>
+  <p>
+    El entrenamiento genera principalmente adaptadores, por lo que antes de convertir a <code>.gguf</code>
+    se fusiona el modelo resultante en una versión de 16&nbsp;bits almacenada en
+    <code>modelo_futbol_merged</code>.
+  </p>
+  <pre><code>import os
+os.environ["TORCH_COMPILE_DISABLE"] = "1"
+
+from unsloth import FastLanguageModel
+
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name="modelo_futbol",
+    max_seq_length=2048,
+    dtype=None,
+    load_in_4bit=True,
+)
+
+print("Fusionando el LLM de fútbol...")
+model.save_pretrained_merged("modelo_futbol_merged", tokenizer, save_method="merged_16bit")
+print("Modelo fusionado guardado en 'modelo_futbol_merged'")</code></pre>
+<img src="Imagenes/image8.png" alt="conversion" width="85%">
+  <h3>5.2. Conversión manual a GGUF</h3>
+  <p>
+    Para crear el archivo <code>.gguf</code> se usa una versión compatible del script
+    <code>convert_hf_to_gguf.py</code>, generando primero un modelo <code>f16</code> en
+    <code>modelo_futbol_gguf\\temp.gguf</code>.
+  </p>
+  <pre><code>cd C:\LLM-Training
+.\venv\Scripts\Activate.ps1
+
+python convert.py modelo_futbol_merged `
+  --outfile modelo_futbol_gguf/temp.gguf `
+  --outtype f16</code></pre>
+
+  <p>
+    Los intentos de cuantizar con <code>llama-quantize.exe</code> no llegaron a producir un archivo
+    funcional, por lo que en esta práctica se ha optado por utilizar el modelo <code>f16</code>
+    directamente en LM Studio, aceptando un mayor tamaño pero garantizando su funcionamiento.
+  </p>
+<img src="Imagenes/image9.png" alt="merged">
+  <h3>5.3. Estructura de carpetas para LM Studio</h3>
+  <p>
+    LM Studio detecta automáticamente modelos locales cuando se almacenan bajo su carpeta
+    <code>.lmstudio\\models</code> con la estructura <code>Publisher/Modelo/archivo.gguf</code>.[web:57][web:63]
+  </p>
+  <p>
+    En este caso se creó la ruta
+    <code>C:\\Users\\harka\\.lmstudio\\models\\harka\\futbol-assistant2\\</code> y se copió ahí
+    el archivo generado <code>temp.gguf</code>, renombrándolo a <code>futbol-assistant2-f16.gguf</code>.
+  </p>
+  <pre><code>$modelsDir = "$env:USERPROFILE\.lmstudio\models"
+$publisher = "harka"
+$modelName = "futbol-assistant2"
+
+$targetDir = Join-Path $modelsDir "$publisher\$modelName"
+mkdir $targetDir -Force
+
+Copy-Item "C:\LLM-Training\modelo_futbol_gguf\temp.gguf" `
+          "$targetDir\futbol-assistant2-f16.gguf" -Force</code></pre>
+
+  <img src="Imagenes/image5.png" alt="modelos" width="85%"> <br>
+  <img src="Imagenes/image1.png" alt="contexto" width="85%"> <br>
+  <img src="Imagenes/image6.png" alt="chat" width="85%">
+</section>
+
+<section class="card">
+  <h2>6. Dificultades encontradas y soluciones</h2>
+
+  <h3>6.1. Automatización fallida de Unsloth con llama.cpp</h3>
+  <p>
+    El primer intento fue dejar que Unsloth construyera automáticamente los binarios de
+    <code>llama.cpp</code> para exportar el LLM a GGUF, pero el proceso intentó ejecutar
+    comandos de compilación típicos de Linux como <code>make</code>, <code>rm</code> o
+    <code>apt-get</code>, que no existen en Windows.
+  </p>
+  <p>
+    La solución fue abandonar esa automatización y pasar a un flujo totalmente manual:
+    descargar los ejecutables de <code>llama.cpp</code>, copiar <code>convert_hf_to_gguf.py</code>
+    y controlar desde PowerShell todos los pasos de conversión.
+  </p>
+
+  <h3>6.2. Incompatibilidades entre versiones de <code>gguf</code> y el conversor</h3>
+  <p>
+    Al descargar la versión más reciente de <code>convert_hf_to_gguf.py</code> surgió un error
+    de importación de tipos de tokenizador porque la librería <code>gguf</code> instalada
+    no era la que el script esperaba.
+  </p>
+  <p>
+    Se resolvió utilizando una revisión anterior del conversor (guardada como <code>convert.py</code>)
+    compatible con la versión de <code>gguf</code> del entorno, evitando tener que volver a instalar
+    paquetes o modificar el código fuente.
+  </p>
+
+  <h3>6.3. Carpeta del modelo incompleta para la conversión</h3>
+  <p>
+    En un primer intento se trató de convertir directamente la carpeta <code>modelo_futbol</code>,
+    pero el conversor devolvió un error al no encontrar <code>config.json</code> ni los pesos
+    completos del modelo.
+  </p>
+  <p>
+    Esto ayudó a entender que <code>modelo_futbol</code> contenía solo parte de la información
+    y que era imprescindible generar primero <code>modelo_futbol_merged</code> con todos los
+    archivos estándar de un modelo de Hugging Face antes de pasar a GGUF.
+  </p>
+
+  <h3>6.4. Cuantización silenciosa y uso de F16</h3>
+  <p>
+    Aunque <code>llama-quantize.exe</code> parecía ejecutarse sin errores, el archivo cuantizado
+    nunca aparecía en la carpeta de salida, por lo que no se podía utilizar un modelo más ligero.
+  </p>
+  <p>
+    Para no bloquear la práctica, se decidió usar el modelo F16 resultante de la conversión, que
+    ocupa más espacio en disco pero funciona de forma estable en LM Studio sobre la GPU disponible.
+  </p>
+  <img src="Imagenes/image8.png" alt="cuantización" width="85%"> <br>
+  <img src="Imagenes/image10.png" alt="error" width="85%">
+  <h3>6.5. LM Studio no detectaba el modelo</h3>
+  <p>
+    Al principio se copió el archivo <code>.gguf</code> a una carpeta genérica
+    <code>FutbolAI</code> directamente bajo <code>.lmstudio\\models</code>, pero LM Studio no
+    mostraba el nuevo modelo en la lista.
+  </p>
+  <p>
+    La documentación indica que la aplicación espera la estructura
+    <code>Publisher/NombreModelo/archivo.gguf</code>, por lo que al reorganizar la ruta como
+    <code>...\\.lmstudio\\models\\harka\\futbol-assistant2\\futbol-assistant2-f16.gguf</code>
+    el modelo apareció inmediatamente y pudo usarse en las conversaciones.[web:57][web:63]
+  </p>
+</section>
+
+<footer>
+  Guía elaborada para documentar el proceso completo de creación de un modelo de lenguaje
+  especializado en fútbol: preparación del entorno, diseño del dataset, entrenamiento con Unsloth,
+  conversión a GGUF, integración en LM Studio y análisis de las principales dificultades técnicas
+  que surgieron durante el trabajo.
+</footer>
+</div>
+</body>
+</html>
 
