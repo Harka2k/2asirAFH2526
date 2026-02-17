@@ -1,1 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Guía práctica: Pre-entrenamiento de un modelo de lenguaje con Don Quijote</title>
+<style>
+:root {
+  --bg: #0f172a;
+  --bg-alt: #020617;
+  --card: #020617;
+  --accent: #38bdf8;
+  --accent-soft: rgba(56,189,248,0.14);
+  --text: #e5e7eb;
+  --text-soft: #9ca3af;
+  --border: #1f2933;
+  --danger: #f97373;
+  --muted: #4b5563;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #111827 0, #020617 50%, #000 100%);
+  color: var(--text);
+}
+.layout {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px 40px;
+}
+header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+header h1 {
+  font-size: 2.2rem;
+  margin: 0 0 8px;
+  letter-spacing: 0.02em;
+}
+header p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.98rem;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.85);
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  margin-bottom: 10px;
+}
+.badge span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
+}
+h2 {
+  margin: 30px 0 10px;
+  font-size: 1.35rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+  padding-bottom: 6px;
+}
+h3 {
+  margin: 18px 0 8px;
+  font-size: 1.05rem;
+  color: var(--accent);
+}
+p {
+  margin: 6px 0 10px;
+  font-size: 0.96rem;
+  color: var(--text-soft);
+}
+ul {
+  margin: 8px 0 10px 20px;
+  padding: 0;
+}
+li {
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+  color: var(--text-soft);
+}
+.card {
+  background: radial-gradient(circle at top left, #111827 0, #020617 40%);
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  padding: 16px 18px;
+  margin: 16px 0;
+  box-shadow: 0 20px 35px rgba(15, 23, 42, 0.75);
+}
+.image-slot {
+  border-radius: 12px;
+  border: 1px dashed rgba(148, 163, 184, 0.7);
+  padding: 10px 14px;
+  text-align: center;
+  color: var(--text-soft);
+  font-size: 0.86rem;
+  margin: 18px 0;
+  background: rgba(15, 23, 42, 0.7);
+}
+.image-slot strong { color: var(--accent); }
+code {
+  font-family: Consolas, "SFMono-Regular", Menlo, Monaco, monospace;
+  background: rgba(15, 23, 42, 0.9);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  border: 1px solid rgba(15, 23, 42, 1);
+}
+pre {
+  background: radial-gradient(circle at top left, #020617 0, #020617 40%, #000 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 1);
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 10px 0 14px;
+  font-size: 0.84rem;
+}
+pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+.note {
+  border-radius: 10px;
+  border-left: 4px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 8px 12px;
+  margin: 12px 0;
+  font-size: 0.86rem;
+}
+.warning {
+  border-radius: 10px;
+  border-left: 4px solid var(--danger);
+  background: rgba(248, 113, 113, 0.1);
+  padding: 8px 12px;
+  margin: 12px 0;
+  font-size: 0.86rem;
+}
+.pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+footer {
+  margin-top: 36px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(148, 163, 184, 0.3);
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+@media (max-width: 700px) {
+  .layout { padding: 20px 14px 30px; }
+  header h1 { font-size: 1.7rem; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<header>
+  <div class="badge">
+    <span></span> Guía práctica · Pre-entrenamiento desde cero (Nano-Modelo)
+  </div>
+  <h1>Pre-entrenar un modelo de lenguaje con el texto de Don Quijote</h1>
+  <p>
+    Documento de la práctica donde se implementa un modelo Transformer desde cero usando PyTorch,
+    se entrena con el texto completo de Don Quijote de la Mancha y se genera texto en estilo 
+    cervantino. El objetivo es comprender el proceso completo de pre-entrenamiento a microescala,
+    utilizando un único libro como “universo” lingüístico.[web:30]
+  </p>
+</header>
+
+<section class="card">
+  <h2>1. Objetivo del proyecto</h2>
+  <p>
+    El objetivo ha sido entrenar un modelo de lenguaje <strong>desde cero</strong> (sin usar un modelo base pre-entrenado)
+    utilizando únicamente el texto de "Don Quijote de la Mancha" de Miguel de Cervantes.[web:30]
+    El modelo no sabe nada del mundo exterior ni del lenguaje moderno; su único universo es el castellano del siglo XVII.
+  </p>
+  <p>
+    Esta práctica permite entender los fundamentos del pre-entrenamiento: tokenización, arquitectura Transformer,
+    mecanismo de atención y bucle de entrenamiento, aplicando los mismos principios que se usan en modelos 
+    gigantescos como GPT-4, pero a escala reducida.
+  </p>
+  <ul>
+    <li>Dataset: Texto completo de Don Quijote (~2.1 millones de caracteres).[web:30]</li>
+    <li>Tokenización: Nivel de caracteres (vocabulario de 105 símbolos únicos).</li>
+    <li>Arquitectura: Transformer tipo GPT implementado manualmente en PyTorch.[web:42]</li>
+    <li>Hardware: NVIDIA GeForce RTX 4070 Ti (12GB VRAM).</li>
+    <li>Entorno: Windows 11 + PowerShell + Python.</li>
+  </ul>
+  <div class="pill-list">
+    <div class="pill">Pre-entrenamiento</div>
+    <div class="pill">Transformer</div>
+    <div class="pill">PyTorch</div>
+    <div class="pill">Tokenización char-level</div>
+    <div class="pill">Self-Attention</div>
+    <div class="pill">Windows + PowerShell</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>2. Preparación del entorno</h2>
+
+  <h3>2.1. Carpeta de trabajo y entorno virtual</h3>
+  <p>
+    Toda la práctica se ha realizado en una carpeta dedicada llamada <code>NanoQuijote</code>, 
+    con un entorno virtual de Python para aislar las dependencias del resto del sistema.
+  </p>
+  <pre><code>mkdir C:\Proyectos\NanoQuijote
+cd C:\Proyectos\NanoQuijote
+
+python -m venv venv
+.\venv\Scripts\activate
+
+pip install torch --index-url https://download.pytorch.org/whl/cu121</code></pre>
+  
+  <div class="note">
+    Antes de entrenar, se comprobó que PyTorch detectaba correctamente la GPU y CUDA. 
+    Ver el mensaje <code>Usando dispositivo: cuda</code> y el nombre de la RTX 4070 Ti 
+    confirmó que el entorno estaba bien configurado.
+  </div>
+
+  <h3>2.2. Descarga del texto de Don Quijote</h3>
+  <p>
+    El texto completo de Don Quijote se ha obtenido desde el Proyecto Gutenberg, que ofrece la obra
+    en formato texto plano y dominio público en varios idiomas y ediciones.[web:30][web:31]
+  </p>
+  <pre><code>Invoke-WebRequest -Uri "https://www.gutenberg.org/files/2000/2000-0.txt" -OutFile "quijote.txt"
+
+# Comprobar las primeras líneas
+Get-Content "quijote.txt" -TotalCount 5</code></pre>
+
+    <img src="Imagenes/image3.png" alt="texto" width="85%">
+
+<section class="card">
+  <h2>3. Tokenización y preparación de datos</h2>
+
+  <h3>3.1. Tokenizador a nivel de caracteres</h3>
+  <p>
+    En lugar de usar un tokenizador BPE avanzado, en esta práctica el modelo aprende directamente
+    a nivel de caracteres (char-level). Este enfoque es más simple y encaja bien con un modelo pequeño,
+    similar a otros ejemplos educativos de transformers mínimos como NanoGPT.[web:42][web:38]
+  </p>
+  <pre><code>with open('quijote.txt', 'r', encoding='utf-8') as f:
+    text = f.read()
+
+chars = sorted(list(set(text)))
+vocab_size = len(chars)  # Resultado: 105 caracteres únicos
+
+# Mapeos char &lt;-&gt; índice
+stoi = { ch:i for i,ch in enumerate(chars) }
+itos = { i:ch for i,ch in enumerate(chars) }
+encode = lambda s: [stoi[c] for c in s]
+decode = lambda l: ''.join([itos[i] for i in l])</code></pre>
+
+  <p>
+    El vocabulario incluye letras mayúsculas y minúsculas, dígitos, signos de puntuación, 
+    caracteres con tilde, eñes y símbolos tipográficos usados en la edición de Gutenberg.[web:30]
+  </p>
+
+  <img src="Imagenes/image1.png" alt="caracteres" width="85%">
+
+  <h3>3.2. División en entrenamiento y validación</h3>
+  <p>
+    Todo el texto se convierte a una secuencia de IDs de caracteres y se divide en conjunto
+    de entrenamiento (90%) y de validación (10%).
+  </p>
+  <pre><code>data = torch.tensor(encode(text), dtype=torch.long)
+
+n = int(0.9 * len(data))
+train_data = data[:n]
+val_data = data[n:]
+
+print(f"Total de tokens: {len(data):,}")
+print(f"Tokens de entrenamiento: {len(train_data):,}")
+print(f"Tokens de validación: {len(val_data):,}")</code></pre>
+</section>
+
+<section class="card">
+  <h2>4. Arquitectura del modelo Transformer</h2>
+
+  <h3>4.1. Hiperparámetros principales</h3>
+  <p>
+    Los hiperparámetros se han ajustado para aprovechar la RTX 4070 Ti sin quedarse cortos
+    ni exceder la memoria disponible.
+  </p>
+  <pre><code>batch_size = 64      # Secuencias en paralelo
+block_size = 256     # Longitud máxima de contexto
+n_embd = 384         # Dimensión de embeddings
+n_head = 6           # Cabezas de atención
+n_layer = 6          # Bloques Transformer
+max_iters = 10000    # Iteraciones de entrenamiento
+eval_interval = 500
+learning_rate = 3e-4
+dropout = 0.2</code></pre>
+
+  <p>
+    Con esta configuración, el modelo tiene <strong>10,819,689 parámetros</strong>, 
+    lo que supone unos 41 MB de memoria en <code>float32</code>, claramente manejable
+    para una GPU de consumo.[web:42][web:38]
+  </p>
+  <img src="Imagenes/image6.png" alt="memoria" width="85%">
+  <h3>4.2. Componentes del Transformer</h3>
+  <p>
+    La arquitectura implementa los bloques típicos de un Transformer decodificador:
+    atención multi-cabeza, conexiones residuales, normalización de capas y red feed-forward.[web:42][web:36]
+  </p>
+  <pre><code>class Head(nn.Module):
+    def __init__(self, head_size):
+        super().__init__()
+        self.key = nn.Linear(n_embd, head_size, bias=False)
+        self.query = nn.Linear(n_embd, head_size, bias=False)
+        self.value = nn.Linear(n_embd, head_size, bias=False)
+        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        B,T,C = x.shape
+        k = self.key(x)
+        q = self.query(x)
+        wei = q @ k.transpose(-2,-1) * C**-0.5
+        wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
+        wei = F.softmax(wei, dim=-1)
+        wei = self.dropout(wei)
+        v = self.value(x)
+        out = wei @ v
+        return out</code></pre>
+
+  <p>
+    Encima de estas cabezas de atención se construyen <code>MultiHeadAttention</code>, 
+    <code>FeedForward</code> y un bloque <code>Block</code> que combina ambos
+    con normalización y atajos residuales, igual que en otros ejemplos de Transformers educativos.[web:42]
+  </p>
+</section>
+
+<section class="card">
+  <h2>5. Entrenamiento del nano-modelo</h2>
+
+  <h3>5.1. Bucle de entrenamiento y cálculo de pérdidas</h3>
+  <p>
+    El entrenamiento sigue el esquema clásico: se obtienen lotes aleatorios de secuencias,
+    se calcula la pérdida de entropía cruzada y se actualizan los pesos con AdamW.
+  </p>
+  <pre><code>def get_batch(split):
+    data = train_data if split == 'train' else val_data
+    ix = torch.randint(len(data) - block_size, (batch_size,))
+    x = torch.stack([data[i:i+block_size] for i in ix])
+    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
+    x, y = x.to(device), y.to(device)
+    return x, y
+
+@torch.no_grad()
+def estimate_loss():
+    out = {}
+    model.eval()
+    for split in ['train', 'val']:
+        losses = torch.zeros(200)
+        for k in range(200):
+            X, Y = get_batch(split)
+            logits, loss = model(X, Y)
+            losses[k] = loss.item()
+        out[split] = losses.mean()
+    model.train()
+    return out</code></pre>
+
+  <pre><code>for iter in range(max_iters):
+    if iter % eval_interval == 0:
+        losses = estimate_loss()
+        print(f"Iteración {iter:5d} | Train Loss: {losses['train']:.4f} | Val Loss: {losses['val']:.4f}")
+
+    xb, yb = get_batch('train')
+    logits, loss = model(xb, yb)
+    optimizer.zero_grad(set_to_none=True)
+    loss.backward()
+    optimizer.step()</code></pre>
+
+  <h3>5.2. Evolución de la pérdida</h3>
+  <p>
+    Durante el entrenamiento, la pérdida disminuyó de forma constante, lo que indica que el modelo 
+    fue aprendiendo patrones del texto:
+  </p>
+  <ul>
+    <li><strong>Iteración 0:</strong> Train Loss 4.8939 · Val Loss 4.8911</li>
+    <li><strong>Iteración 2500:</strong> Train Loss 1.2396 · Val Loss 1.5892</li>
+    <li><strong>Iteración 5000:</strong> Train Loss 1.0805 · Val Loss 1.4244</li>
+    <li><strong>Iteración 7500:</strong> Train Loss 0.9910 · Val Loss 1.3721</li>
+    <li><strong>Iteración 9500:</strong> Train Loss 0.9306 · Val Loss 1.3548</li>
+  </ul>
+
+  <p>
+    La diferencia moderada entre entrenamiento y validación sugiere que el modelo generaliza 
+    razonablemente bien a partes del texto que no ha visto en los lotes de entrenamiento.
+  </p>
+  <img src="Imagenes/image5.png" alt="iteraciones" width="85%">
+  <div class="note">
+    El entrenamiento utilizó casi el 100% de la GPU, con unos 6 GB de VRAM y temperaturas en torno
+    a 75‑76°C. Estos valores son normales para cargas intensivas de cómputo en una RTX 4070 Ti.
+  </div>
+</section>
+
+<section class="card">
+  <h2>6. Generación de texto y resultados</h2>
+
+  <h3>6.1. Generación de texto tras el entrenamiento</h3>
+  <p>
+    Una vez finalizado el entrenamiento, se usó el método <code>generate</code> del modelo
+    para producir texto nuevo carácter a carácter, empezando desde un token vacío (ID 0).
+  </p>
+  <pre><code>context = torch.zeros((1, 1), dtype=torch.long, device=device)
+generated_tokens = model.generate(context, max_new_tokens=1000)[0].tolist()
+generated_text = decode(generated_tokens)
+print(generated_text)</code></pre>
+
+  <p>
+    El texto resultante no es perfectamente coherente, pero sí muestra:
+  </p>
+  <ul>
+    <li>Uso de vocabulario propio del español antiguo.</li>
+    <li>Estructuras de frase largas con comas y diálogos.</li>
+    <li>Referencias a personajes como Sancho y expresiones como “vuestra merced”.</li>
+    <li>Palabras inventadas que suenan “cervantinas”, típico de modelos char-level pequeños.[web:38][web:40]</li>
+  </ul>
+  <img src="Imagenes/image4.png" alt="texto" width="85%">
+  <h3>6.2. Guardado del modelo entrenado</h3>
+  <p>
+    Al final del script, el modelo se guarda en un archivo <code>quijote_model.pth</code>
+    junto con el vocabulario y los hiperparámetros principales, de forma que se pueda
+    reutilizar más adelante sin repetir el entrenamiento.
+  </p>
+  <pre><code>torch.save({
+    'model_state_dict': model.state_dict(),
+    'vocab_size': vocab_size,
+    'stoi': stoi,
+    'itos': itos,
+    'hyperparameters': {
+        'n_embd': n_embd,
+        'n_head': n_head,
+        'n_layer': n_layer,
+        'block_size': block_size
+    }
+}, 'quijote_model.pth')</code></pre>
+<img src="Imagenes/image7.png" alt="modelo" width="85%">
+<section class="card">
+  <h2>7. Dificultades encontradas y cómo se resolvieron</h2>
+
+  <h3>7.1. Problemas de codificación en el script</h3>
+  <p>
+    Al principio, el archivo <code>entrenar.py</code> daba un error del tipo 
+    <code>SyntaxError: Non-UTF-8 code starting with '\xe1'</code>, provocado por acentos
+    y caracteres especiales en comentarios y cadenas de texto.
+  </p>
+  <p>
+    Para solucionarlo, se recreó el archivo desde PowerShell sin acentos en los comentarios
+    y asegurando que se guardaba explícitamente en UTF‑8, evitando así conflictos
+    con la codificación por defecto.
+  </p>
+
+  <h3>7.2. Comprobación del uso de GPU y temperaturas</h3>
+  <p>
+    Otra duda inicial fue si era “malo” que la GPU estuviera al 99‑100% de uso durante
+    varios minutos. Con <code>nvidia-smi</code> se verificó que la temperatura rondaba los 76°C,
+    un valor totalmente normal para una carga de entrenamiento en una GPU moderna.
+  </p>
+  <pre><code>nvidia-smi</code></pre>
+  <h3>7.3. Estabilidad general del entrenamiento</h3>
+  <p>
+    Una vez resuelto el tema de la codificación, el entrenamiento fue estable: no hubo
+    errores de memoria, ni problemas con CUDA, ni necesidades de ajustar el tamaño
+    de lote a la baja. La configuración inicial de hiperparámetros funcionó bien
+    a la primera gracias a la VRAM disponible.
+  </p>
+  <p>
+    En resumen, aparte del detalle de la codificación del archivo Python, 
+    todo el proceso se desarrolló sin errores graves y el modelo llegó a converger
+    con un loss razonablemente bajo.
+  </p>
+</section>
+
+<section class="card">
+  <h2>8. Conclusiones y posibles extensiones</h2>
+  <p>
+    Esta práctica demuestra que, incluso en un PC doméstico con una sola GPU, 
+    es posible llevar a cabo un pre-entrenamiento real (aunque a microescala) 
+    de un modelo de lenguaje basado en Transformers, siempre que se ajuste
+    el tamaño del modelo y del dataset.
+  </p>
+  <p>
+    Aunque el resultado no alcanza la coherencia de modelos masivos, sí reproduce
+    de forma convincente el “gesto” del texto de Cervantes. A partir de aquí,
+    posibles extensiones serían probar con más libros, aumentar ligeramente
+    el tamaño del modelo o convertirlo a otros formatos para su uso en interfaces
+    como LM Studio.
+  </p>
+
+  <div class="note">
+    La principal enseñanza no es tanto obtener un modelo útil en producción,
+    sino entender en profundidad qué ocurre durante el pre-entrenamiento:
+    cómo se tokeniza el texto, cómo funciona la atención y cómo se optimizan
+    millones de parámetros a partir de un objetivo tan simple como predecir
+    el siguiente carácter.[web:42][web:38]
+  </div>
+</section>
+
+<footer>
+  Guía elaborada para documentar el proceso completo de pre-entrenar un nano-modelo
+  de lenguaje con el texto de Don Quijote: preparación del entorno, tokenización,
+  implementación de la arquitectura Transformer, entrenamiento, generación de texto
+  y reflexión sobre las dificultades encontradas y lo aprendido.
+</footer>
+</div>
+</body>
+</html>
 
